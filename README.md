@@ -14,7 +14,19 @@ Activate the plugin, then in the settings, give your project a title and set the
 
 Then set an ontology file - [here is an example](https://zenodo.org/records/8084209) of an ontology that is used to preserve electroacoustic music projects called Eulalie. Download the file [here](https://zenodo.org/records/8084209/files/Eulalie.php.xml?download=1).
 
-2. 
+2. Unpack ontology
+
+![unpack onto tab](/docs/ontos_1.png)
+
+When the plugin is active, a menu will appear in Obsidian's main ribbon. You can click `Unpack ontology...` to get a better idea about how your ontology works.
+
+![unpack onto settings tab](/docs/ontos_2.png)
+
+You can set a name for the folder that will be created.
+
+![ontoilogy unpacked](/docs/ontos_3.png)
+
+You will see that a folder called `ontos` will be created at the root of your vault. Here you will find your ontology that has been unpacked which you can view as needed.
 
 ## Acknowledgments
 
