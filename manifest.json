@@ -1,0 +1,11 @@
+{
+	"id": "onto-tracker",
+	"name": "Onto Tracker",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "Manage projects according to an ontology.",
+	"author": "Jacob Hart",
+	"authorUrl": "https://github.com/jdchart",
+	"fundingUrl": "https://github.com/jdchart",
+	"isDesktopOnly": true
+}
