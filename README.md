@@ -97,6 +97,7 @@ Observe now that the metadate of your freeze files will have been updated (and a
 - [ ] Rule creation for folder placement.
 - [ ] Rule creation for file name parsing.
 - [ ] Detect already existing files in a new freeze and retain markdown content.
+- [ ] Implement "other" mime type parsing.
 
 ## Acknowledgements
 
