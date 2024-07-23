@@ -22,9 +22,9 @@ function parseFileContent(tags, filePath, stats){
         "device_id" : stats.dev,
         "extension" : path.extname(filePath).slice(1),
         "onto_mime_type" : null,
-        "onto_rec_type" : null,
-        "onto_rec_type_group" : null,
-        "onto_relations" : []
+        // "onto_rec_type" : null,
+        // "onto_rec_type_group" : null,
+        // "onto_relations" : []
     }
 
     return matter.stringify("", data);

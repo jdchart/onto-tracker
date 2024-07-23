@@ -17,6 +17,7 @@ class MapModal extends Modal {
 		}
 	};
 
+	// Create map settings tab:
 	async onOpen() {
 		const {contentEl} = this;
 		contentEl.setText('Map...');
@@ -75,12 +76,32 @@ class MapModal extends Modal {
 	};
 };
 
+// Processing:
 async function processMap(settings, mapSettings, app){
+	let ontologyXML = await utils.readXML(settings.ontoFile);
+	let onto_data = onto_to_dict(ontologyXML);
+	
 
 	let mappingData = await getMappingData(mapSettings.mapName, app);
 
-	treatFolder("freezes/" + mapSettings.freezeName + "/content", app, mappingData);
+	treatFolder("freezes/" + mapSettings.freezeName + "/content", app, mappingData, onto_data);
 };
+
+function onto_to_dict(ontology_data){
+	let ret = {}
+
+	for(let key in ontology_data.hml_structure){
+		for(let i = 0; i < ontology_data.hml_structure[key].length; i++){
+			let item = ontology_data.hml_structure[key][i];
+
+			let itemArray = item[Object.keys(item)[0]];
+			
+			ret[key] = itemArray;
+		};
+	}
+
+	return ret;
+}
 
 async function getMappingData(mappingName, app){
 
@@ -97,22 +118,22 @@ async function getMappingData(mappingName, app){
 	};
 };
 
-async function treatFolder(folderPath, app, mappingData){
+async function treatFolder(folderPath, app, mappingData, ontoData){
 	const existing = await app.vault.adapter.list(folderPath);
 
 	for(var i = 0; i < existing.files.length; i++){
 		let ext = existing.files[i].split(".")[existing.files[i].split(".").length - 1];
 
 		if(ext == "md"){
-			await treatFile(existing.files[i], app, mappingData);
+			await treatFile(existing.files[i], app, mappingData, ontoData);
 		}
 	};
 	for(var i = 0; i < existing.folders.length; i++){
-		await treatFolder(existing.folders[i], app, mappingData);
+		await treatFolder(existing.folders[i], app, mappingData, ontoData);
 	};
 };
 
-async function treatFile(filePath, app, mappingData){
+async function treatFile(filePath, app, mappingData, ontoData){
 	let root = app.vault.adapter.basePath;
 	let fileRead = await utils.readMD(root + "/" + filePath);
 
@@ -139,7 +160,7 @@ async function treatFile(filePath, app, mappingData){
 		if(mimeMappingKeys[i].split("/").length == 1){
 			if(mimeMappingKeys[i].split("/")[0] == mime_main){
 				// Apply rule
-				applyRule(fileReadParse.data, mappingData["mimeMapping"][mimeMappingKeys[i]])
+				applyRule(fileReadParse.data, mappingData["mimeMapping"][mimeMappingKeys[i]], ontoData)
 			};
 		};
 	};
@@ -150,58 +171,40 @@ async function treatFile(filePath, app, mappingData){
 			if(mimeMappingKeys[i].split("/")[0] == mime_main){
 				if(mimeMappingKeys[i].split("/")[1] == mime_second){
 					// Apply rule
-					applyRule(fileReadParse.data, mappingData["mimeMapping"][mimeMappingKeys[i]])
+					applyRule(fileReadParse.data, mappingData["mimeMapping"][mimeMappingKeys[i]], ontoData)
 				};
 			};
 		};
 	};
 
-
-
-
-
 	let asString = matter.stringify(fileReadParse.content, fileReadParse.data);
 	utils.updateMDFile(root + "/" + filePath, asString);
 };
 
-function applyRule(fileData, rule){
-	
+function applyRule(fileData, rule, ontoData){	
 	if (rule != null){
 		if (typeof rule === 'string' || rule instanceof String){
-			rule = [rule]
-		}
-
-		console.log("\n")
-		console.log(fileData)
-		console.log(rule)
+			rule = [rule];
+		};
 
 		for(var i = 0; i < rule.length; i++){
-			var thisRule = rule[i];
-			var ruleSplit = thisRule.split(" ")[2];
-			let onto_rec_type;
-			let onto_rec_type_group;
-			if(ruleSplit == "113"){
-				onto_rec_type = "Document multimédia";
-				onto_rec_type_group = "Manifestation physique";
-			}else if(ruleSplit == "106"){
-				onto_rec_type = "Sample";
-				onto_rec_type_group = "Manifestation physique";
-			}
-			else if(ruleSplit == "108"){
-				onto_rec_type = "Partition";
-				onto_rec_type_group = "Manifestation physique";
-			}
 			
-			fileData["onto_rec_type"] = onto_rec_type
-			fileData["onto_rec_type_group"] = onto_rec_type_group
-		}
-	}else{
-		console.log("\n")
-		console.log(fileData)
-		console.log("No rule found")
-	}
+			var thisRule = rule[i];
+			var ruleSplit = thisRule.split(" ");
+			
+			const ruleKey = ruleSplit[0];
+			const ruleEqu = ruleSplit[1];
+			const ruleVal = ruleSplit[2];
 
-}
+			
+			if(ruleKey in ontoData){
+				fileData["onto_" + ruleKey] = ontoData[ruleKey][parseInt(ruleVal) - 1];
+			};
+		};
+	}else{
+
+	};
+};
 
 function freezeListToOptions(fl){
 	let ret = {}
