@@ -96,8 +96,12 @@ Observe now that the metadate of your freeze files will have been updated (and a
 
 - [ ] Rule creation for folder placement.
 - [ ] Rule creation for file name parsing.
-- [ ] Detect already existing files in a new freeze and retain markdown content.
 - [ ] Implement "other" mime type parsing.
+- [ ] Eulalie default config.
+- [ ] Main project record creation.
+- [ ] Implement other ontology formats (currently works with heurist format ontologies).
+- [ ] Prevent processing when process already in process.
+- [ ] Move getFreezeFolderName to utils.
 
 ## Acknowledgements
 
