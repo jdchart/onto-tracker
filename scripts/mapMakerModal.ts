@@ -5,7 +5,7 @@ import { App, Modal, Setting, Notice } from 'obsidian';
 const matter = require('gray-matter');
 
 // Default data:
-import { mime_data } from 'default_data/mime_types';
+import { mime_data } from 'assets/mime_types';
 
 // Main modal:
 class MapMakerModal extends Modal {
@@ -77,8 +77,9 @@ async function processMakeMapFile(settings, mapSettings, app){
 	await app.vault.createFolder(file_name);
 	
 	// Add mapping files:
-	await app.vault.create(file_name + "/mime_types.md", mimeTypeMapContent());
-	await app.vault.create(file_name + "/mime_types_mapping.md", mimeMapContent());
+	await app.vault.create(file_name + "/01-mime_types.md", mimeTypeMapContent());
+	await app.vault.create(file_name + "/02-mime_types_mapping.md", mimeMapContent());
+	await app.vault.create(file_name + "/03-extension_mapping.md", extensionContent());
 
 	// Notify processing finished:
 	new Notice('Mapping created!');
@@ -89,12 +90,12 @@ function mimeTypeMapContent(){
 
 	let data = {}
 	for(let i in mime_data["mimetypes"]){
-		data[mime_data["mimetypes"][i]["fxm_Extension"][0]] = mime_data["mimetypes"][i]["fxm_MimeType"][0];
+		data[mime_data["mimetypes"][i]["fxm_Extension"][0]] = [mime_data["mimetypes"][i]["fxm_MimeType"][0]];
 	};
 
 	// Return the data as string.
 	return matter.stringify("Here, you can associate file extensions and mime types. Learn more about mime types [here](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types).", data);
-}
+};
 
 function mimeMapContent(){
 	// Create a file that allows the user to create rules that will class files by mime type.
@@ -109,8 +110,20 @@ function mimeMapContent(){
 	};
 
 	// Return cotnent as string.
-	return matter.stringify("Here you can create rules that will class files according to their mime type. For example, type `RecTypes == 65` in audio so that all audio files are given the RecType 65. You can also add subtypes (for example audio/wav) to further refine mapping.", data);
-}
+	return matter.stringify("Here you can create rules that will class files according to their mime type. For example, type `RecTypes == 65` in audio so that all audio files are given the RecType 65. You can also add subtypes (for example audio/x-wav) to further refine mapping.", data);
+};
+
+function extensionContent(){
+	// Create a file that allows the user to create rules that will class files by file extension.
+	let data = {};
+
+	for(let i in mime_data["mimetypes"]){
+		data[mime_data["mimetypes"][i]["fxm_Extension"][0]] = [];
+	};
+
+	// Return cotnent as string.
+	return matter.stringify("Here you can create rules that will class files according to their file extension. For example, type `RecTypes == 65` in wav so that all wav files are given the RecType 65.", data);
+};
 
 function getFreezeFolderName(original_name, folder_list, index){
 	// Get the final folder name.

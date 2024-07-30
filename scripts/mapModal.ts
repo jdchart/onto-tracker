@@ -120,17 +120,20 @@ async function getMappingData(mappingName, app){
 
 	// Read markdown files:
 	let root = app.vault.adapter.basePath;
-	let mimeMapping = await utils.readMD(root + "/mappings/" + mappingName + "/mime_types_mapping.md");
-	let mimeTypes = await utils.readMD(root + "/mappings/" + mappingName + "/mime_types.md");
+	let mimeMapping = await utils.readMD(root + "/mappings/" + mappingName + "/02-mime_types_mapping.md");
+	let mimeTypes = await utils.readMD(root + "/mappings/" + mappingName + "/01-mime_types.md");
+	let extensionMapping = await utils.readMD(root + "/mappings/" + mappingName + "/03-extension_mapping.md");
 	
 	// Conserve only the YAML data:
 	const mimeMappingParse = matter(mimeMapping).data;
 	const mimeTypesParse = matter(mimeTypes).data;
+	const extensionMappingParse = matter(extensionMapping).data;
 
 	// Return in a single object.
 	return {
 		"mimeMapping" : mimeMappingParse,
-		"mimeTypes" : mimeTypesParse
+		"mimeTypes" : mimeTypesParse,
+		"extensionMapping" : extensionMappingParse
 	};
 };
 
@@ -165,14 +168,14 @@ async function treatFile(filePath, app, mappingData, ontoData){
 	
 	// Set mime type
 	if(Object.keys(mappingData["mimeTypes"]).includes(fileReadParse.data["extension"])){
-		fileReadParse.data["onto_mime_type"] = mappingData["mimeTypes"][fileReadParse.data["extension"]];
+		fileReadParse.data["onto_mime_type"] = mappingData["mimeTypes"][fileReadParse.data["extension"]][0];
 	}else{
 		fileReadParse.data["onto_mime_type"] = "unknown/unknown";
 	};
 
 	// Get the file's main and secondary mime types:
-	let mime_main = fileReadParse.data["onto_mime_type"].split("/")[0]
-	let mime_second = fileReadParse.data["onto_mime_type"].split("/")[1]
+	let mime_main = fileReadParse.data["onto_mime_type"].split("/")[0];
+	let mime_second = fileReadParse.data["onto_mime_type"].split("/")[1];
 
 	// Main mime type rule application
 	let mimeMappingKeys = Object.keys(mappingData["mimeMapping"])

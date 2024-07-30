@@ -65,6 +65,7 @@ class SampleSettingTab extends PluginSettingTab {
 	constructor(app: App, plugin: OntoTracker) {
 		super(app, plugin);
 		this.plugin = plugin;
+		this.app = app;
 	};
 
 	display(): void {
@@ -72,6 +73,6 @@ class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		// Create each settings element:
-		createSettingsElements(this, containerEl);
+		createSettingsElements(this, containerEl, this.app, this);
 	};
 };
