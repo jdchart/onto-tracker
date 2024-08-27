@@ -33,7 +33,7 @@ export default class OntoTracker extends Plugin {
 		createCommands(this);
 
 		// Add settings:
-		this.addSettingTab(new SampleSettingTab(this.app, this));
+		this.addSettingTab(new OntoTrackerSettingTab(this.app, this));
 
 		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
 		// Using this function will automatically remove the event listener when this plugin is disabled.
@@ -59,7 +59,7 @@ export default class OntoTracker extends Plugin {
 };
 
 // Create the plugin settings tab:
-class SampleSettingTab extends PluginSettingTab {
+class OntoTrackerSettingTab extends PluginSettingTab {
 	plugin: OntoTracker;
 
 	constructor(app: App, plugin: OntoTracker) {
