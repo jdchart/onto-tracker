@@ -51,5 +51,5 @@ export const createRibbonElements = (parent : any) => {
 
         menu.showAtMouseEvent(evt);
     });
-    ribbonIconEl.addClass('my-plugin-ribbon-class');
+
 };
