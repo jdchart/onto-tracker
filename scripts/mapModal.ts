@@ -216,8 +216,8 @@ function applyRule(fileData: any, rule: any, ontoData : any){
 		// Iterate through rules to apply:
 		for(var i = 0; i < rule.length; i++){
 			// Parse the rule:
-			var thisRule = rule[i];
-			var ruleSplit = thisRule.split(" ");
+			let thisRule = rule[i];
+			let ruleSplit = thisRule.split(" ");
 			const ruleKey = ruleSplit[0]; // The class of the ontology
 			const ruleEqu = ruleSplit[1];
 			const ruleVal = ruleSplit[2]; // The value to be set

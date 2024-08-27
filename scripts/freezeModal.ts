@@ -96,7 +96,7 @@ function customDateSetting(parentElement : HTMLElement, freezeSettings : Object)
 	info_div.createEl('div', { text: 'The date the freeze was performed.', cls : "setting-item-description" });
 	
 	// Get current date:
-	var now = new Date();
+	let now = new Date();
 	now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
 	const current_date = now.toISOString().slice(0,16);
 
