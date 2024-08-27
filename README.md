@@ -2,7 +2,7 @@
 
 **Manage projects according to an ontology.**
 
-Create an obsidian vault that tracks the contents of a folder on your computer. Files are categorized accrodign to a given ontology according to a set of user-defined rules. This content can then be parsed for tasks such as uploading content to a CMS.
+Create an obsidian vault that tracks the contents of a folder on your computer. Files are categorized accrodign to a given ontology according to a set of user-defined rules. This content can then be parsed for tasks such as uploading content to a CMS (see some python scripts for this [here](https://github.com/jdchart/onto-tracker-parse)).
 
 1. [Usage](#usage)
 - [Project settings](#project-settings)
