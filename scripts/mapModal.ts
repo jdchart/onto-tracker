@@ -24,7 +24,7 @@ class MapModal extends Modal {
 	async onOpen() {
 		// Create modal elements:
 		const {contentEl} = this;
-		contentEl.setText('Map...');
+		contentEl.setText('Map');
 		contentEl.createEl("div", { text : "Update the contents of a freeze with a mapping.", cls : "setting-item-description"})
 		contentEl.createEl("br");
 

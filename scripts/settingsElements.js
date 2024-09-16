@@ -29,7 +29,6 @@ export const settingsProjectTitleSetup = (settingsClass, containerEl) => {
 export const eulalieDefaultButton = (settingsClass, containerEl, ontologySet, app, plug) => {
     let thisSet = new Setting(containerEl)
         .setName('Eulalie default')
-        //.setDesc('Please choose a source directory...')
         .setDesc("Use the Eulalie ontology with a premade default mapping.")
 
     thisSet.addButton(but => but
@@ -56,13 +55,11 @@ function get_asset_path(pat, app, plug){
 export const settingsSourceFolderSetup = (settingsClass, containerEl) => {
     let thisSet = new Setting(containerEl)
         .setName('Source directory')
-        //.setDesc('Please choose a source directory...')
         .setDesc(getValuerDescription(settingsClass.plugin.settings.sourceFolder, "Choose a source folder..."))
 
     thisSet.addButton(but => but
-        .setButtonText("Source directory...")
+        .setButtonText("Source directory")
         .onClick(async () => {
-            // new Notice("Choosing...");
             let selectedFolder = await utils.getFolder();
             if (selectedFolder != null){
                 settingsClass.plugin.settings.sourceFolder = selectedFolder;
@@ -77,10 +74,9 @@ export const settingsSourceFolderSetup = (settingsClass, containerEl) => {
 export const settingsOntologyFileSetup = (settingsClass, containerEl) => {
     let thisSet = new Setting(containerEl)
         .setName('Ontology')
-        //.setDesc('Please choose a source directory...')
         .setDesc(getValuerDescription(settingsClass.plugin.settings.ontoFile, "Choose an ontology file..."))
     thisSet.addButton(but => but
-        .setButtonText("Ontology file...")
+        .setButtonText("Ontology file")
         .onClick(async () => {
             let selectedFolder = await utils.getFile();
             if (selectedFolder != null){

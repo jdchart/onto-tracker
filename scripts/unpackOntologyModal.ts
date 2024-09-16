@@ -22,7 +22,7 @@ class UnpackOntologyModal extends Modal {
 	onOpen() {
 		// Create modal elements:
 		const {contentEl} = this;
-		contentEl.setText('Unpack ontology...');
+		contentEl.setText('Unpack ontology');
 		contentEl.createEl("div", { text : "Here you can unpack the currently selected ontology file into a folder. This will break the XML file into an easier to read collection of markdown files.", cls : "setting-item-description"});
 		contentEl.createEl("br");
 

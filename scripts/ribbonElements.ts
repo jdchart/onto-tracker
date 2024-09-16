@@ -18,7 +18,7 @@ export const createRibbonElements = (parent : any) => {
         //Add menu items:
         menu.addItem((item) =>
             item
-            .setTitle("New freeze...")
+            .setTitle("New freeze")
             // .setIcon("documents")
             .onClick(() => {
                 new FreezeModal(parent.app, parent.settings).open();
@@ -26,7 +26,7 @@ export const createRibbonElements = (parent : any) => {
         );
         menu.addItem((item) =>
             item
-            .setTitle("Map...")
+            .setTitle("Map")
             // .setIcon("documents")
             .onClick(() => {
                 new MapModal(parent.app, parent.settings).open();
@@ -34,7 +34,7 @@ export const createRibbonElements = (parent : any) => {
         );
         menu.addItem((item) =>
             item
-            .setTitle("New mapping...")
+            .setTitle("New mapping")
             // .setIcon("documents")
             .onClick(() => {
                 new MapMakerModal(parent.app, parent.settings).open();
@@ -42,7 +42,7 @@ export const createRibbonElements = (parent : any) => {
         );
         menu.addItem((item) =>
             item
-            .setTitle("Unpack ontology...")
+            .setTitle("Unpack ontology")
             // .setIcon("documents")
             .onClick(() => {
                 new UnpackOntologyModal(parent.app, parent.settings).open();

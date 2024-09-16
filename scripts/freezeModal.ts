@@ -25,7 +25,7 @@ class FreezeModal extends Modal {
 	onOpen() {
 		// Create the modal elements:
 		const {contentEl} = this;
-		contentEl.setText('New Freeze...');
+		contentEl.setText('New freeze');
 		contentEl.createEl("div", { text : "Here you can create a freeze and give it a name and date.", cls : "setting-item-description"})
 		contentEl.createEl("br");
 

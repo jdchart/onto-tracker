@@ -25,7 +25,7 @@ class MapMakerModal extends Modal {
 	onOpen() {
 		// Create modal elements:
 		const {contentEl} = this;
-		contentEl.setText('New mapping file...');
+		contentEl.setText('New mapping file');
 		contentEl.createEl("div", { text : "Create a new mapping file which will tell Onto Tracker how to automatically class files.", cls : "setting-item-description"});
 		contentEl.createEl("br");
 
@@ -64,7 +64,7 @@ async function processMakeMapFile(settings, mapSettings, app){
 	// Process mapping creation.
 
 	// Notify that processing has begun:
-	new Notice('Creating mapping...');
+	new Notice('Creating mapping');
 
 	// Check if mappings folder exists, if not, create it.
 	if (await app.vault.adapter.exists("mappings") === false){

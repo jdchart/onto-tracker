@@ -9,7 +9,7 @@ import { MapModal } from 'scripts/mapModal';
 export const createCommands = (parent: any) => {
     parent.addCommand({
         id: 'open-new-freeze-modal',
-        name: 'Perform a new freeze...',
+        name: 'Perform a new freeze',
         callback: () => {
             new FreezeModal(parent.app, parent.settings).open();
         }
@@ -17,7 +17,7 @@ export const createCommands = (parent: any) => {
 
     parent.addCommand({
         id: 'open-map-modal',
-        name: 'Perform a mapping...',
+        name: 'Perform a mapping',
         callback: () => {
             new MapModal(parent.app, parent.settings).open();
         }
@@ -25,7 +25,7 @@ export const createCommands = (parent: any) => {
 
     parent.addCommand({
         id: 'open-map-maker-modal',
-        name: 'Create a new mapping file...',
+        name: 'Create a new mapping file',
         callback: () => {
             new MapMakerModal(parent.app, parent.settings).open();
         }
@@ -33,7 +33,7 @@ export const createCommands = (parent: any) => {
 
     parent.addCommand({
         id: 'open-unpack-ontology-modal',
-        name: 'Unpack an ontology file...',
+        name: 'Unpack an ontology file',
         callback: () => {
             new UnpackOntologyModal(parent.app, parent.settings).open();
         }
