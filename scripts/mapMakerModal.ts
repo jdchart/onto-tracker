@@ -1,28 +1,46 @@
-// A lmodal to create mappings which will be used to map freezes to the ontology.
+/**
+ * Map Maker Modal - Creates mapping files for ontological classification
+ * 
+ * This modal allows users to create mapping rules that automatically classify
+ * files according to their MIME types and extensions based on the loaded ontology.
+ */
 
 // Imports
 import { App, Modal, Setting, Notice } from 'obsidian';
-const matter = require('gray-matter');
+import * as matter from 'gray-matter';
 
 // Default data:
 import { mime_data } from 'assets/mime_types';
+import { OntoTrackerSettings as ProjectSettings, MapSettings, MimeTypeItem, getUniqueFolderName } from 'scripts/types';
 
-// Main modal:
+/**
+ * Modal for creating mapping configurations
+ * Generates mapping files that define how files should be classified
+ */
 class MapMakerModal extends Modal {
-	projectSettings : Object;
-	thisApp : Object;
-	mapSettings : { [key: string]: any };
+	projectSettings: ProjectSettings;
+	thisApp: App;
+	mapSettings: MapSettings;
 
-	constructor(app: App, settings : Object) {
+	/**
+	 * Initialize the map maker modal
+	 * @param app - Obsidian app instance
+	 * @param settings - Project settings
+	 */
+	constructor(app: App, settings: ProjectSettings) {
 		super(app);
 		this.thisApp = app;
 		this.projectSettings = settings;
 		this.mapSettings = {
 			'fileName' : 'untitled'
 		}
-	};
+	}
 
-	onOpen() {
+	/**
+	 * Display the map maker modal content
+	 * Creates form for mapping name input
+	 */
+	onOpen(): void {
 		// Create modal elements:
 		const {contentEl} = this;
 		contentEl.setText('New mapping file');
@@ -48,58 +66,91 @@ class MapMakerModal extends Modal {
 					.setButtonText("Create")
 					.setCta()
 					.onClick(async () => {
-						this.close();
-						await processMakeMapFile(this.projectSettings, this.mapSettings, this.thisApp);
+						try {
+							// Validate input
+							if (!this.mapSettings.fileName.trim()) {
+								new Notice('Error: Please enter a mapping name');
+								return;
+							}
+
+							this.close();
+							await processMakeMapFile(this.projectSettings, this.mapSettings, this.thisApp);
+						} catch (error) {
+							console.error('Error creating mapping:', error);
+							new Notice(`Error creating mapping: ${error instanceof Error ? error.message : 'Unknown error'}`);
+						}
 					})
 			})
-	};
+	}
 
-	onClose() {
+	/**
+	 * Clean up modal content when closed
+	 */
+	onClose(): void {
 		const {contentEl} = this;
 		contentEl.empty();
-	};
-};
+	}
+}
 
-async function processMakeMapFile(settings, mapSettings, app){
-	// Process mapping creation.
+/**
+ * Process the creation of mapping files
+ * @param settings - Project settings
+ * @param mapSettings - Mapping configuration
+ * @param app - Obsidian app instance
+ */
+async function processMakeMapFile(settings: ProjectSettings, mapSettings: MapSettings, app: App): Promise<void> {
+	try {
+		// Notify that processing has begun:
+		new Notice('Creating mapping');
 
-	// Notify that processing has begun:
-	new Notice('Creating mapping');
+		// Check if mappings folder exists, if not, create it.
+		if (await (app.vault.adapter as any).exists("mappings") === false){
+			await (app.vault as any).createFolder("mappings");
+		}
 
-	// Check if mappings folder exists, if not, create it.
-	if (await app.vault.adapter.exists("mappings") === false){
-        await app.vault.createFolder("mappings");
-    };
+		// Create folder (if already exists, add an incremental number to it):
+		const existing = await (app.vault.adapter as any).list('mappings');
+		const fileName = getUniqueFolderName('mappings/' + mapSettings.fileName, existing.folders, 0);
+		await (app.vault as any).createFolder(fileName);
+		
+		// Add mapping files:
+		await (app.vault as any).create(fileName + "/01-mime_types.md", mimeTypeMapContent());
+		await (app.vault as any).create(fileName + "/02-mime_types_mapping.md", mimeMapContent());
+		await (app.vault as any).create(fileName + "/03-extension_mapping.md", extensionContent());
 
-	// Create folder (if already exists, add an incremental number to it):
-	const existing = await app.vault.adapter.list('mappings');
-    let file_name = getFreezeFolderName('mappings/' + mapSettings.fileName, existing.folders, 0);
-	await app.vault.createFolder(file_name);
-	
-	// Add mapping files:
-	await app.vault.create(file_name + "/01-mime_types.md", mimeTypeMapContent());
-	await app.vault.create(file_name + "/02-mime_types_mapping.md", mimeMapContent());
-	await app.vault.create(file_name + "/03-extension_mapping.md", extensionContent());
+		// Notify processing finished:
+		new Notice('Mapping created!');
+	} catch (error) {
+		console.error('Error creating mapping files:', error);
+		new Notice(`Error creating mapping: ${error instanceof Error ? error.message : 'Unknown error'}`);
+		throw error;
+	}
+}
 
-	// Notify processing finished:
-	new Notice('Mapping created!');
-};
-
-function mimeTypeMapContent(){
+/**
+ * Generate content for MIME type mapping file
+ * @returns Formatted markdown content with MIME type associations
+ */
+function mimeTypeMapContent(): string {
 	// Create a file that allows the user to associate file extensions and mime types.
 
-	let data = {}
-	for(let i in mime_data["mimetypes"]){
-		data[mime_data["mimetypes"][i]["fxm_Extension"][0]] = [mime_data["mimetypes"][i]["fxm_MimeType"][0]];
-	};
+	const data: { [key: string]: string[] } = {}
+	for(const i in mime_data["mimetypes"]) {
+		const mimeType = mime_data["mimetypes"][i] as MimeTypeItem;
+		data[mimeType["fxm_Extension"][0]] = [mimeType["fxm_MimeType"][0]];
+	}
 
 	// Return the data as string.
 	return matter.stringify("Here, you can associate file extensions and mime types. Learn more about mime types [here](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types).", data);
-};
+}
 
-function mimeMapContent(){
+/**
+ * Generate content for MIME type classification rules
+ * @returns Formatted markdown content with classification templates
+ */
+function mimeMapContent(): string {
 	// Create a file that allows the user to create rules that will class files by mime type.
-	let data = {
+	const data = {
 		"audio" : [],
 		"video" : [],
 		"image" : [],
@@ -111,33 +162,25 @@ function mimeMapContent(){
 
 	// Return cotnent as string.
 	return matter.stringify("Here you can create rules that will class files according to their mime type. For example, type `RecTypes == 65` in audio so that all audio files are given the RecType 65. You can also add subtypes (for example audio/x-wav) to further refine mapping.", data);
-};
+}
 
-function extensionContent(){
+/**
+ * Generate content for file extension mapping
+ * @returns Formatted markdown content with extension-based rules
+ */
+function extensionContent(): string {
 	// Create a file that allows the user to create rules that will class files by file extension.
-	let data = {};
+	const data: { [key: string]: string[] } = {};
 
-	for(let i in mime_data["mimetypes"]){
-		data[mime_data["mimetypes"][i]["fxm_Extension"][0]] = [];
-	};
+	for(const i in mime_data["mimetypes"]) {
+		const mimeType = mime_data["mimetypes"][i] as MimeTypeItem;
+		data[mimeType["fxm_Extension"][0]] = [];
+	}
 
 	// Return cotnent as string.
 	return matter.stringify("Here you can create rules that will class files according to their file extension. For example, type `RecTypes == 65` in wav so that all wav files are given the RecType 65.", data);
-};
+}
 
-function getFreezeFolderName(original_name, folder_list, index){
-	// Get the final folder name.
-
-    let proposed_name = original_name;
-    if(index != 0){
-        proposed_name = original_name + "_" + String(index);
-    };
-
-    if (folder_list.includes(proposed_name)){
-        return getFreezeFolderName(original_name, folder_list, index + 1);
-    }else{
-        return proposed_name;
-    };
-};
+// Note: getUniqueFolderName is now imported from utils
 
 export {MapMakerModal};

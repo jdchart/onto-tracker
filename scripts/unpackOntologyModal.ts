@@ -1,25 +1,44 @@
-// Unpack an ontology file into markdown files for consultation.
+/**
+ * Unpack Ontology Modal - Converts ontology XML files to readable markdown
+ * 
+ * This modal allows users to unpack complex ontology XML files into
+ * a structured collection of markdown files for easier consultation
+ * and understanding of the ontological structure.
+ */
 
 import { App, Modal, Setting, Notice } from 'obsidian';
 import * as utils from 'scripts/utils';
-const matter = require('gray-matter');
+import * as matter from 'gray-matter';
+import { OntoTrackerSettings as ProjectSettings, UnpackSettings, getUniqueFolderName } from 'scripts/types';
 
-// Main modal:
+/**
+ * Modal for unpacking ontology files
+ * Provides interface for configuring ontology unpacking destination
+ */
 class UnpackOntologyModal extends Modal {
-	projectSettings : Object;
-	thisApp : Object;
-	unpackSettings : { [key: string]: any };
+	projectSettings: ProjectSettings;
+	thisApp: App;
+	unpackSettings: UnpackSettings;
 
-	constructor(app: App, settings : Object) {
+	/**
+	 * Initialize the unpack ontology modal
+	 * @param app - Obsidian app instance
+	 * @param settings - Project settings containing ontology file path
+	 */
+	constructor(app: App, settings: ProjectSettings) {
 		super(app);
 		this.thisApp = app;
 		this.projectSettings = settings;
 		this.unpackSettings = {
 			'folderName' : 'untitled'
 		}
-	};
+	}
 
-	onOpen() {
+	/**
+	 * Display the unpack modal content
+	 * Creates form for destination folder configuration
+	 */
+	onOpen(): void {
 		// Create modal elements:
 		const {contentEl} = this;
 		contentEl.setText('Unpack ontology');
@@ -45,102 +64,119 @@ class UnpackOntologyModal extends Modal {
 					.setButtonText("Unpack")
 					.setCta()
 					.onClick(async () => {
-						this.close();
-						await processUnpack(this.projectSettings, this.thisApp, this.unpackSettings);
+						try {
+							// Validate settings
+							if (!this.projectSettings.ontoFile) {
+								new Notice('Error: No ontology file specified in settings');
+								return;
+							}
+
+							if (!this.unpackSettings.folderName.trim()) {
+								new Notice('Error: Please enter a folder name');
+								return;
+							}
+
+							this.close();
+							await processUnpack(this.projectSettings, this.thisApp, this.unpackSettings);
+						} catch (error) {
+							console.error('Error unpacking ontology:', error);
+							new Notice(`Error unpacking ontology: ${error instanceof Error ? error.message : 'Unknown error'}`);
+						}
 					})
 			})
-	};
+	}
 
-	onClose() {
+	/**
+	 * Clean up modal content when closed
+	 */
+	onClose(): void {
 		const {contentEl} = this;
 		contentEl.empty();
-	};
-};
+	}
+}
 
-async function processUnpack(settings : Object, app : Object, ontoSettings){
+/**
+ * Process the unpacking of an ontology file
+ * @param settings - Project settings containing ontology file path
+ * @param app - Obsidian app instance
+ * @param ontoSettings - Unpacking configuration
+ */
+async function processUnpack(settings: ProjectSettings, app: App, ontoSettings: UnpackSettings): Promise<void> {
 	// Process unpacking:
 	
 	// Notify that processing has begun:
 	new Notice('Unpacking ontology...');
 
 	// Read the XML file:
-	let ontologyXML = await utils.readXML(settings.ontoFile);
+	const ontologyXML = await utils.readXML((settings as any).ontoFile);
 
 	// Check if ontos folder exists (if not, create it):
-	if (await app.vault.adapter.exists("ontos") === false){
-        await app.vault.createFolder("ontos");
-    };
+	if (await (app as any).vault.adapter.exists("ontos") === false){
+        await (app as any).vault.createFolder("ontos");
+    }
 
 	// Get destination folder name (if name already exists, add an incremental number to it):
-	const existing = await app.vault.adapter.list('ontos');
-    let folder_name = getFreezeFolderName('ontos/' + ontoSettings.folderName, existing.folders, 0);
-    app.vault.createFolder(folder_name);
+	const existing = await (app as any).vault.adapter.list('ontos');
+    const folder_name = getUniqueFolderName('ontos/' + ontoSettings.folderName, existing.folders, 0);
+    (app as any).vault.createFolder(folder_name);
 
 	// Gather ontology metadata here:
-	let metadata = {};
+	const metadata: { [key: string]: any } = {};
 
 	// Iterate through the contents of the XML file:
-	for(let key in ontologyXML.hml_structure){		
-		let firstItem = ontologyXML.hml_structure[key][0]
+	for(const key in ontologyXML.hml_structure){		
+		const firstItem = ontologyXML.hml_structure[key][0]
 		
 		// Heurist format ontology bug fix:
 		if (typeof firstItem === 'string' || firstItem instanceof String){
 			if(firstItem != "\n\n"){
-				metadata[key] = firstItem;
-			};
+				(metadata as any)[key] = firstItem;
+			}
 		}
 		else{
 			// Create a folder for this class type:
-			app.vault.createFolder(folder_name + "/" + key);
+			(app as any).vault.createFolder(folder_name + "/" + key);
 
 			// Create a file for each item in the class:
 			for(let i = 0; i < ontologyXML.hml_structure[key].length; i++){
 				// Convert item to array:
-				let item = ontologyXML.hml_structure[key][i];
-				let itemArray = item[Object.keys(item)[0]];
+				const item = ontologyXML.hml_structure[key][i];
+				const itemArray = item[Object.keys(item)[0]];
 				
 				// Create file for each item:
 				for(let j = 0; j < itemArray.length; j++){
-					await app.vault.create(folder_name + "/" + key + "/" + String(j + 1) + ".md", metadataParse(itemArray[j]));
-				};
-			};
-		};
-	};
+					await (app as any).vault.create(folder_name + "/" + key + "/" + String(j + 1) + ".md", metadataParse(itemArray[j]));
+				}
+			}
+		}
+	}
 
 	// Create metadata file:
-	await app.vault.create(folder_name + "/metadata.md", metadataParse(metadata));
+	await (app as any).vault.create(folder_name + "/metadata.md", metadataParse(metadata));
 
 	// Notify processing finished:
 	new Notice('Ontology unpacked!');
-};
+}
 
-function metadataParse(data){
+/**
+ * Parse ontology metadata into markdown format
+ * @param data - Raw ontology metadata
+ * @returns Formatted markdown content with YAML frontmatter
+ */
+function metadataParse(data: any): string {
 	// Parse the ontology data into file:
-	let retData = {};
+	const retData: { [key: string]: string } = {};
 
 	// Add each attribute as YAML item:
-	for(let key in data){
+	for(const key in data){
 		let field = String(data[key])
 		field = field.replace(/\[/g, "(").replace(/\]/g, ")").replace(/\n/g, "").replace(/\\/g, "").replace(/\uFFFD/g, '').replace(/:/g, '--');
-		retData[String(key)] = field;
-	};
+		(retData as any)[String(key)] = field;
+	}
 
 	return matter.stringify("", retData);
-};
+}
 
-function getFreezeFolderName(original_name, folder_list, index){
-    // Return the final folder name.
-	
-	let proposed_name = original_name;
-    if(index != 0){
-        proposed_name = original_name + "_" + String(index);
-    };
-
-    if (folder_list.includes(proposed_name)){
-        return getFreezeFolderName(original_name, folder_list, index + 1);
-    }else{
-        return proposed_name;
-    };
-};
+// Note: getUniqueFolderName is now imported from utils
 
 export {UnpackOntologyModal};

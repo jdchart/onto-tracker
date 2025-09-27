@@ -1,17 +1,33 @@
-// A modal that allows the user to map files in a freeze according to an existing mapping.
+/**
+ * Map Modal - Applies mapping rules to freeze content
+ * 
+ * This modal allows users to apply previously created mapping rules
+ * to the files in a freeze, automatically classifying them according
+ * to the configured ontology.
+ */
 
 // Various imports:
 import { App, Modal, Setting, Notice } from 'obsidian';
 import * as utils from 'scripts/utils';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const matter = require('gray-matter');
+import { OntoTrackerSettings as ProjectSettings, MapProcessSettings as MapSettings, MappingData, OntologyData, listToOptions } from 'scripts/types';
 
-// Main modal:
+/**
+ * Modal for applying mappings to freeze content
+ * Provides interface for selecting freeze and mapping to process
+ */
 class MapModal extends Modal {
-	projectSettings : Object;
-	thisApp : Object;
-	mapSettings : { [key: string]: any };
+	projectSettings: ProjectSettings;
+	thisApp: App;
+	mapSettings: MapSettings;
 
-	constructor(app: App, settings : Object) {
+	/**
+	 * Initialize the map modal
+	 * @param app - Obsidian app instance
+	 * @param settings - Project settings
+	 */
+	constructor(app: App, settings: ProjectSettings) {
 		super(app);
 		this.thisApp = app;
 		this.projectSettings = settings;
@@ -19,9 +35,13 @@ class MapModal extends Modal {
 			'freezeName' : '',
 			'mapName' : ''
 		}
-	};
+	}
 
-	async onOpen() {
+	/**
+	 * Display the map modal content
+	 * Creates dropdowns for freeze and mapping selection
+	 */
+	async onOpen(): Promise<void> {
 		// Create modal elements:
 		const {contentEl} = this;
 		contentEl.setText('Map');
@@ -29,9 +49,9 @@ class MapModal extends Modal {
 		contentEl.createEl("br");
 
 		// Get lists of existing freezes and mappings:
-		let freezeList = await utils.getFolderFolders(this.thisApp, "freezes");
+		const freezeList = await utils.getFolderFolders(this.thisApp, "freezes");
 		this.mapSettings.freezeName = freezeList[0];
-		let mappingList = await utils.getFolderFolders(this.thisApp, "mappings");
+		const mappingList = await utils.getFolderFolders(this.thisApp, "mappings");
 		this.mapSettings.mapName = mappingList[0];
 
 		// Freeze:
@@ -41,7 +61,7 @@ class MapModal extends Modal {
 			.addDropdown(
 				(drop) => {
 					drop
-					.addOptions(freezeListToOptions(freezeList))
+					.addOptions(listToOptions(freezeList))
 					.onChange((val) => {
 						this.mapSettings.freezeName = val
 					})
@@ -55,7 +75,7 @@ class MapModal extends Modal {
 			.addDropdown(
 				(drop) => {
 					drop
-					.addOptions(freezeListToOptions(mappingList))
+					.addOptions(listToOptions(mappingList))
 					.onChange((val) => {
 						this.mapSettings.mapName = val
 					})
@@ -69,60 +89,91 @@ class MapModal extends Modal {
 					.setButtonText("Map")
 					.setCta()
 					.onClick(async () => {
-						this.close();
-						await processMap(this.projectSettings, this.mapSettings, this.thisApp);
+						try {
+							// Validate selections
+							if (!this.mapSettings.freezeName || !this.mapSettings.mapName) {
+								new Notice('Error: Please select both a freeze and mapping');
+								return;
+							}
+
+							this.close();
+							await processMap(this.projectSettings, this.mapSettings, this.thisApp);
+						} catch (error) {
+							console.error('Error in mapping process:', error);
+							new Notice(`Error in mapping: ${error instanceof Error ? error.message : 'Unknown error'}`);
+						}
 					})
 			})
-	};
+	}
 
-	onClose() {
+	/**
+	 * Clean up modal content when closed
+	 */
+	onClose(): void {
 		const {contentEl} = this;
 		contentEl.empty();
-	};
-};
+	}
+}
 
-async function processMap(settings, mapSettings, app){
+/**
+ * Process mapping application to freeze content
+ * @param settings - Project settings
+ * @param mapSettings - Selected freeze and mapping names
+ * @param app - Obsidian app instance
+ */
+async function processMap(settings: ProjectSettings, mapSettings: MapSettings, app: App): Promise<void> {
 	// Mapping processing:
 	
 	// Notify that processing has begun:
-	new Notice('Mapping \"' + mapSettings.freezeName + "\" using \"" + mapSettings.mapName + "\"...");
+	new Notice(`Mapping "${mapSettings.freezeName}" using "${mapSettings.mapName}"...`);
 
 	// Get ontology XML data and convert to a dictionary:
-	let ontologyXML = await utils.readXML(settings.ontoFile);
-	let onto_data = onto_to_dict(ontologyXML);
+	const ontologyXML = await utils.readXML(settings.ontoFile);
+	const onto_data = onto_to_dict(ontologyXML);
 	
 	// Read the mapping data:
-	let mappingData = await getMappingData(mapSettings.mapName, app);
+	const mappingData = await getMappingData(mapSettings.mapName, app);
 
 	// Process freeze folder:
 	treatFolder("freezes/" + mapSettings.freezeName + "/content", app, mappingData, onto_data);
 
 	// Notify processing finished:
 	new Notice('Mapping completed!');
-};
+}
 
-function onto_to_dict(ontology_data){
+/**
+ * Convert ontology XML data to dictionary format
+ * @param ontology_data - Raw ontology data from XML
+ * @returns Structured ontology data as dictionary
+ */
+function onto_to_dict(ontology_data: any): OntologyData {
 	// Convert XML to dict
 
-	let ret = {}
-	for(let key in ontology_data.hml_structure){
+	const ret: OntologyData = {}
+	for(const key in ontology_data.hml_structure){
 		for(let i = 0; i < ontology_data.hml_structure[key].length; i++){
-			let item = ontology_data.hml_structure[key][i];
-			let itemArray = item[Object.keys(item)[0]];
-			ret[key] = itemArray;
-		};
-	};
+			const item = ontology_data.hml_structure[key][i];
+			const itemArray = item[Object.keys(item)[0]];
+			(ret as any)[key] = itemArray;
+		}
+	}
 	return ret;
-};
+}
 
-async function getMappingData(mappingName, app){
+/**
+ * Load mapping data from mapping files
+ * @param mappingName - Name of the mapping to load
+ * @param app - Obsidian app instance
+ * @returns Combined mapping data from all mapping files
+ */
+async function getMappingData(mappingName: string, app: App): Promise<MappingData> {
 	// Colelct the mapping data:
 
 	// Read markdown files:
-	let root = app.vault.adapter.basePath;
-	let mimeMapping = await utils.readMD(root + "/mappings/" + mappingName + "/02-mime_types_mapping.md");
-	let mimeTypes = await utils.readMD(root + "/mappings/" + mappingName + "/01-mime_types.md");
-	let extensionMapping = await utils.readMD(root + "/mappings/" + mappingName + "/03-extension_mapping.md");
+	const root = (app.vault.adapter as any).basePath;
+	const mimeMapping = await utils.readMD(root + "/mappings/" + mappingName + "/02-mime_types_mapping.md");
+	const mimeTypes = await utils.readMD(root + "/mappings/" + mappingName + "/01-mime_types.md");
+	const extensionMapping = await utils.readMD(root + "/mappings/" + mappingName + "/03-extension_mapping.md");
 	
 	// Conserve only the YAML data:
 	const mimeMappingParse = matter(mimeMapping).data;
@@ -135,109 +186,121 @@ async function getMappingData(mappingName, app){
 		"mimeTypes" : mimeTypesParse,
 		"extensionMapping" : extensionMappingParse
 	};
-};
+}
 
-async function treatFolder(folderPath, app, mappingData, ontoData){
+/**
+ * Recursively process a folder and its contents for mapping
+ * @param folderPath - Path to the folder to process
+ * @param app - Obsidian app instance
+ * @param mappingData - Mapping rules to apply
+ * @param ontoData - Ontology data for classification
+ */
+async function treatFolder(folderPath: string, app: App, mappingData: MappingData, ontoData: OntologyData): Promise<void> {
 	// Process a folder.
 
 	// Iterate through the contents of given folder:
 	const existing = await app.vault.adapter.list(folderPath);
-	for(var i = 0; i < existing.files.length; i++){
+	for(let i = 0; i < existing.files.length; i++){
 		// Treat files:
 
 		// Check the file is markdown:
-		let ext = utils.get_extension(existing.files[i], existing.files[i]);
-		if(ext == "md"){
+		const ext = utils.get_extension(existing.files[i], existing.files[i]);
+		if(ext === "md"){
 			// Treat file:
 			await treatFile(existing.files[i], app, mappingData, ontoData);
-		};
-	};
-	for(var i = 0; i < existing.folders.length; i++){
+		}
+	}
+	for(let i = 0; i < existing.folders.length; i++){
 		// Treat folders:
 		await treatFolder(existing.folders[i], app, mappingData, ontoData);
-	};
-};
+	}
+}
 
-async function treatFile(filePath, app, mappingData, ontoData){
+/**
+ * Process a single file for mapping classification
+ * @param filePath - Path to the file to process
+ * @param app - Obsidian app instance
+ * @param mappingData - Mapping rules to apply
+ * @param ontoData - Ontology data for classification
+ */
+async function treatFile(filePath: string, app: App, mappingData: MappingData, ontoData: OntologyData): Promise<void> {
 	// Process a file
 
 	// Read the file:
-	let root = app.vault.adapter.basePath;
-	let fileRead = await utils.readMD(root + "/" + filePath);
-	let fileReadParse = matter(fileRead);
+	const root = (app.vault.adapter as any).basePath;
+	const fileRead = await utils.readMD(root + "/" + filePath);
+	const fileReadParse = matter(fileRead);
 	
 	// Set mime type
 	if(Object.keys(mappingData["mimeTypes"]).includes(fileReadParse.data["extension"])){
 		fileReadParse.data["onto_mime_type"] = mappingData["mimeTypes"][fileReadParse.data["extension"]][0];
 	}else{
 		fileReadParse.data["onto_mime_type"] = "unknown/unknown";
-	};
+	}
 
 	// Get the file's main and secondary mime types:
-	let mime_main = fileReadParse.data["onto_mime_type"].split("/")[0];
-	let mime_second = fileReadParse.data["onto_mime_type"].split("/")[1];
+	const mime_main = fileReadParse.data["onto_mime_type"].split("/")[0];
+	const mime_second = fileReadParse.data["onto_mime_type"].split("/")[1];
 
 	// Main mime type rule application
-	let mimeMappingKeys = Object.keys(mappingData["mimeMapping"])
-	for(var i = 0; i < mimeMappingKeys.length; i++ ){
-		if(mimeMappingKeys[i].split("/").length == 1){
-			if(mimeMappingKeys[i].split("/")[0] == mime_main){
+	const mimeMappingKeys = Object.keys(mappingData["mimeMapping"])
+	for(let i = 0; i < mimeMappingKeys.length; i++ ){
+		if(mimeMappingKeys[i].split("/").length === 1){
+			if(mimeMappingKeys[i].split("/")[0] === mime_main){
 				// Apply rule
 				applyRule(fileReadParse.data, mappingData["mimeMapping"][mimeMappingKeys[i]], ontoData)
-			};
-		};
-	};
+			}
+		}
+	}
 
 	// Secondary mime type rule application
-	for(var i = 0; i < mimeMappingKeys.length; i++ ){
+	for(let i = 0; i < mimeMappingKeys.length; i++ ){
 		if(mimeMappingKeys[i].split("/").length > 1){
-			if(mimeMappingKeys[i].split("/")[0] == mime_main){
-				if(mimeMappingKeys[i].split("/")[1] == mime_second){
+			if(mimeMappingKeys[i].split("/")[0] === mime_main){
+				if(mimeMappingKeys[i].split("/")[1] === mime_second){
 					// Apply rule
 					applyRule(fileReadParse.data, mappingData["mimeMapping"][mimeMappingKeys[i]], ontoData)
-				};
-			};
-		};
-	};
+				}
+			}
+		}
+	}
 
 	// Update file:
-	let asString = matter.stringify(fileReadParse.content, fileReadParse.data);
+	const asString = matter.stringify(fileReadParse.content, fileReadParse.data);
 	utils.updateMDFile(root + "/" + filePath, asString);
-};
+}
 
-function applyRule(fileData: any, rule: any, ontoData : any){	
+/**
+ * Apply ontological classification rules to file metadata
+ * @param fileData - File metadata to modify
+ * @param rule - Classification rule(s) to apply
+ * @param ontoData - Ontology data containing classification values
+ */
+function applyRule(fileData: any, rule: any, ontoData: any): void {	
 	// Apply a list of rules to a file:
 
 	if (rule != null){
 		if (typeof rule === 'string' || rule instanceof String){
 			rule = [rule];
-		};
+		}
 
 		// Iterate through rules to apply:
-		for(var i = 0; i < rule.length; i++){
+		for(let i = 0; i < rule.length; i++){
 			// Parse the rule:
-			let thisRule = rule[i];
-			let ruleSplit = thisRule.split(" ");
+			const thisRule = rule[i];
+			const ruleSplit = thisRule.split(" ");
 			const ruleKey = ruleSplit[0]; // The class of the ontology
-			const ruleEqu = ruleSplit[1];
+			// const ruleEqu = ruleSplit[1]; // Equality operator (currently unused)
 			const ruleVal = ruleSplit[2]; // The value to be set
 
 			// Add a new YAML property drawn from the ontology data:
 			if(ruleKey in ontoData){
 				fileData["onto_" + ruleKey] = ontoData[ruleKey][parseInt(ruleVal) - 1];
-			};
-		};
-	}else{};
-};
+			}
+		}
+	}
+}
 
-function freezeListToOptions(fl : any){
-	// Convert a list to html options.
-
-	let ret = {};
-	for(var i = 0; i < fl.length; i++){
-		ret[fl[i]] = fl[i];
-	};
-	return ret;
-};
+// Note: freezeListToOptions is now replaced with listToOptions from utils
 
 export {MapModal};

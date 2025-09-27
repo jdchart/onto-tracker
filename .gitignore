@@ -1,22 +1,90 @@
 # vscode
+
 .vscode 
 
+
+
 # Intellij
+
 *.iml
+
 .idea
 
+
+
 # npm
+
 node_modules
 
+
+
 # Don't include the compiled main.js file in the repo.
+
 # They should be uploaded to GitHub releases instead.
+
 main.js
 
+
+
 # Exclude sourcemaps
+
 *.map
 
+
+
 # obsidian
+
 data.json
 
+
+
 # Exclude macOS Finder (System Explorer) View States
+
 .DS_Store
+
+
+# Clacky-related configuration
+/.clackyai/
+
+
+# TypeScript-specific files
+*.tsbuildinfo
+
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+
+# Package manager cache
+.npm
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
