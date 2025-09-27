@@ -11,7 +11,7 @@ import { MapModal } from 'scripts/mapModal';
 
 export const createRibbonElements = (parent : any) => {
     // Create menu in ribbon:
-		const ribbonIconEl = parent.addRibbonIcon('go-to-file', 'Onto Tracker', (evt: MouseEvent) => {
+		parent.addRibbonIcon('go-to-file', 'Onto Tracker', (evt: MouseEvent) => {
         // Create menu on click:
         const menu = new Menu();
 

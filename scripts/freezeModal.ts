@@ -1,16 +1,30 @@
-// A modal which allows the user to create a md file for each of the files in the source folder.
+/**
+ * Freeze Modal - Allows users to create "freezes" of project content
+ * 
+ * A freeze creates markdown files for each file in the source folder,
+ * capturing metadata and allowing for version tracking over time.
+ */
 
 // Imports
-import { App, Modal, Setting } from 'obsidian';
+import { App, Modal, Setting, Notice } from 'obsidian';
 import { processFreeze } from 'scripts/procFreeze';
+import { FreezeSettings, OntoTrackerSettings as ProjectSettings } from 'scripts/types';
 
-// Create modal:
+/**
+ * Modal for creating project freezes
+ * Provides interface for configuring freeze settings including name, date, and options
+ */
 class FreezeModal extends Modal {
-	projectSettings : Object;
-	thisApp : Object;
-	freezeSettings : { [key: string]: any };
+	projectSettings: ProjectSettings;
+	thisApp: App;
+	freezeSettings: FreezeSettings;
 
-	constructor(app: App, settings : Object) {
+	/**
+	 * Initialize the freeze modal
+	 * @param app - Obsidian app instance
+	 * @param settings - Project settings containing source folder and ontology info
+	 */
+	constructor(app: App, settings: ProjectSettings) {
 		super(app);
 		this.thisApp = app;
 		this.projectSettings = settings;
@@ -20,9 +34,13 @@ class FreezeModal extends Modal {
 			'keepOld' : true,
 			'forbidden' : "DS_Store"
 		}
-	};
+	}
 
-	onOpen() {
+	/**
+	 * Display the freeze modal content
+	 * Creates form elements for freeze configuration
+	 */
+	onOpen(): void {
 		// Create the modal elements:
 		const {contentEl} = this;
 		contentEl.setText('New freeze');
@@ -73,40 +91,63 @@ class FreezeModal extends Modal {
 					.setButtonText("Freeze")
 					.setCta()
 					.onClick(async () => {
-						this.close();
+						try {
+							// Validate settings before processing
+							if (!this.projectSettings.sourceFolder) {
+								new Notice('Error: No source folder specified in settings');
+								return;
+							}
 
-						// Freeze is processed in procFreeze.js:
-						await processFreeze(this.projectSettings, this.freezeSettings, this.thisApp);
+							if (!this.freezeSettings.freezeName.trim()) {
+								new Notice('Error: Please enter a freeze name');
+								return;
+							}
+
+							this.close();
+
+							// Freeze is processed in procFreeze.ts:
+							await processFreeze(this.projectSettings, this.freezeSettings, this.thisApp);
+						} catch (error) {
+							console.error('Error in freeze creation:', error);
+							new Notice(`Error creating freeze: ${error instanceof Error ? error.message : 'Unknown error'}`);
+						}
 					})
 			});
-	};
+	}
 
-	onClose() {
+	/**
+	 * Clean up modal content when closed
+	 */
+	onClose(): void {
 		const {contentEl} = this;
 		contentEl.empty();
-	};
-};
+	}
+}
 
-// A custom date entry element:
-function customDateSetting(parentElement : HTMLElement, freezeSettings : Object){
-	let top_div = parentElement.createEl('div', {cls : "setting-item"})
-	let info_div = top_div.createEl('div', {cls : "setting-item-info"})
-	let control_div = top_div.createEl('div', {cls : "setting-item-control"})
+/**
+ * Create a custom date/time input element for freeze settings
+ * @param parentElement - Parent HTML element to attach the input to
+ * @param freezeSettings - Freeze settings object to update with selected date
+ */
+function customDateSetting(parentElement: HTMLElement, freezeSettings: FreezeSettings): void {
+	const top_div = parentElement.createEl('div', {cls : "setting-item"})
+	const info_div = top_div.createEl('div', {cls : "setting-item-info"})
+	const control_div = top_div.createEl('div', {cls : "setting-item-control"})
 	info_div.createEl('div', { text: 'Freeze date', cls : "setting-item-name" });
 	info_div.createEl('div', { text: 'The date the freeze was performed.', cls : "setting-item-description" });
 	
 	// Get current date:
-	let now = new Date();
+	const now = new Date();
 	now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
 	const current_date = now.toISOString().slice(0,16);
 
     const dateTimeInput = control_div.createEl('input', { attr: { type: 'datetime-local' }, value : current_date });
 
-	freezeSettings.freezeDate = dateTimeInput.value;
+	(freezeSettings as any).freezeDate = dateTimeInput.value;
 
 	dateTimeInput.addEventListener('change', () => {
-		freezeSettings.freezeDate = dateTimeInput.value;
+		(freezeSettings as any).freezeDate = dateTimeInput.value;
 	});
-};
+}
 
 export {FreezeModal};
